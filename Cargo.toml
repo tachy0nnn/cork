@@ -14,5 +14,5 @@ license = "AGPL-3.0-or-later"
 
 # maintaining dependencies in root cargo.toml would be easier :P
 [workspace.dependencies]
-clap = "4.6.7"
+clap = { version = "4.6.7", features = ["cargo"] }
 gtk4 = { version = "0.11.5", features = ["v4_22"] }
