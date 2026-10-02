@@ -1,5 +1,5 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 members = [
     "crates/linker",
     "crates/runtime",
@@ -15,3 +15,4 @@ license = "AGPL-3.0-or-later"
 # maintaining dependencies in root cargo.toml would be easier :P
 [workspace.dependencies]
 clap = "4.6.7"
+gtk4 = { version = "0.11.5", features = ["v4_22"] }
