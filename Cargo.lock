@@ -3,5 +3,17 @@
 version = 4
 
 [[package]]
-name = "cork"
+name = "linker"
+version = "0.1.0"
+
+[[package]]
+name = "runtime"
+version = "0.1.0"
+
+[[package]]
+name = "shell"
+version = "0.1.0"
+
+[[package]]
+name = "update"
 version = "0.1.0"

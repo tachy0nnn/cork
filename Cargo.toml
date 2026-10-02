@@ -1,6 +1,16 @@
-[package]
-name = "cork"
+[workspace]
+resolver = "2"
+members = [
+    "crates/linker",
+    "crates/runtime",
+    "crates/shell",
+    "crates/update",
+]
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
+license = "AGPL-3.0-or-later"
 
-[dependencies]
+# maintaining dependencies in root cargo.toml would be easier :P
+[workspace.dependencies]
