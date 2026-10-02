@@ -22,7 +22,10 @@ fn main() {
     println!("cargo:rustc-env=GIT_HASH={git_hash}");
     println!("cargo:rustc-env=BUILD_VERSION={full_version}");
 
-    if let Ok(output) = Command::new("git").args(["rev-parse", "--git-dir"]).output() {
+    if let Ok(output) = Command::new("git")
+        .args(["rev-parse", "--git-dir"])
+        .output()
+    {
         if output.status.success() {
             let git_dir = String::from_utf8_lossy(&output.stdout).trim().to_string();
             let head_path = Path::new(&git_dir).join("HEAD");
