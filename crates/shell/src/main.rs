@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use gtk4::prelude::*;
 use gtk4::{Application, glib};
 use shell::{build_ui, cli};
@@ -15,6 +17,13 @@ fn main() -> glib::ExitCode {
         }
         _ => {}
     }
+
+    let apk_path: &PathBuf = matches
+    .get_one::<PathBuf>("apk")
+    .expect("APK path is required");
+
+    println!("using APK: {}", apk_path.display());
+    runtime::initialize_config_dir();
 
     if matches.get_flag("debug") {
         println!("[dbg] launching gtk4 window...");

@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 clap.workspace = true
 gtk4.workspace = true
+runtime.workspace = true
