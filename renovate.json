@@ -6,9 +6,11 @@
   ],
   "packageRules": [
     {
-      "matchPackagePatterns": ["*"],
       "matchUpdateTypes": ["minor", "patch"],
-      "groupName": "All non-major dependencies"
+      "groupName": "All non-major dependencies",
+      "matchPackageNames": [
+        "*"
+      ]
     },
     {
       "matchManagers": ["github-actions"],
