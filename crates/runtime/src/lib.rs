@@ -78,6 +78,7 @@ pub fn extract_libraries(
         // if file exists on disk, compare SHA-256 hashes
         if compute_file_sha256(&out_path).is_ok_and(|hash| hash == apk_sha256) {
             // skip if hashes are the same
+            extracted_files.push(out_path);
             continue;
         }
 

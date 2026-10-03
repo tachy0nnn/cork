@@ -12,3 +12,7 @@ libc.workspace = true
 
 [lints]
 workspace = true
+
+[build-dependencies]
+cc = { version = "1.6.0", features = ["parallel"] }
+cmake = "0.1.58"
