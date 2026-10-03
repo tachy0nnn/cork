@@ -76,16 +76,12 @@ pub fn extract_libraries(
         let apk_sha256: [u8; 32] = Sha256::digest(&content).into();
 
         // if file exists on disk, compare SHA-256 hashes
-        if out_path.exists() {
-            if let Ok(local_sha256) = compute_file_sha256(&out_path) {
-                if local_sha256 == apk_sha256 {
-                    // skip if hashes same
-                    continue;
-                }
-            }
+        if compute_file_sha256(&out_path).is_ok_and(|hash| hash == apk_sha256) {
+            // skip if hashes are the same
+            continue;
         }
 
-        // file is missing or has a different hash?
+        // file is missing or has a different hash
         if let Some(parent) = out_path.parent() {
             fs::create_dir_all(parent)?;
         }
