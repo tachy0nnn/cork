@@ -34,7 +34,7 @@ sudo dnf install git gcc gtk4-devel pkg-config
 ### Compilation
 1. Clone the repository:
   ```bash
-  git clone https://github.com/tachy0nnn/cork.git
+  git clone --recursive https://github.com/tachy0nnn/cork.git
   cd cork
   ```
 2. Build the binary:
