@@ -35,7 +35,7 @@ jobs:
       - name: Package release artifact
         run: |
           mkdir -p staging
-          cp target/release/shell staging/cork
+          cp target/release/cork staging/cork
           cp LICENSE staging/
           tar -czvf "cork-${{ github.ref_name }}-linux-x86_64.tar.gz" -C staging .
 

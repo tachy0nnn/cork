@@ -64,6 +64,6 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: cork-dev-linux-x86_64
-          path: target/release/shell
+          path: target/release/cork # frick YOU
           if-no-files-found: error
           retention-days: 7
