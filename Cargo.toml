@@ -12,10 +12,11 @@ default-members = ["crates/shell"]
 version = "0.1.0"
 edition = "2024"
 license = "AGPL-3.0-or-later"
+repository = "https://github.com/tachy0nnn/cork"
 
 # maintaining dependencies in root cargo.toml would be easier :P
 [workspace.dependencies]
-clap = { version = "4.6.7", features = ["cargo"] }
+clap = { version = "4.6.7", features = ["derive", "cargo"] }
 gtk4 = { version = "0.11.5", features = ["v4_14"] }
 directories = "6.0.0"
 zip = "8.6.0"
@@ -30,3 +31,6 @@ unsafe_code = "warn"
 [workspace.lints.clippy]
 all = "warn"
 pedantic = "warn"
+
+[profile.release]
+strip = true
