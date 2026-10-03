@@ -2,7 +2,9 @@
 name = "shell"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
+repository.workspace = true
 
 [[bin]]
 name = "cork"
@@ -12,3 +14,6 @@ path = "src/main.rs"
 clap.workspace = true
 gtk4.workspace = true
 runtime.workspace = true
+
+[lints]
+workspace = true
