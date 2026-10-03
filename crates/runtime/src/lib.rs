@@ -103,10 +103,7 @@ pub fn extract_libraries(
     Ok(extracted_files)
 }
 
-pub fn extract_assets_dir(
-    apk_path: &Path,
-    dest_dir: &Path,
-) -> io::Result<Vec<PathBuf>> {
+pub fn extract_assets_dir(apk_path: &Path, dest_dir: &Path) -> io::Result<Vec<PathBuf>> {
     let file = File::open(apk_path)?;
     let mut archive = ZipArchive::new(file)?;
     let mut extracted_files = Vec::new();
