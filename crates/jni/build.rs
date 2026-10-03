@@ -12,6 +12,9 @@ fn main() {
         .build_target("jnivm")
         .define("JNIVM_ENABLE_TESTS", "OFF")
         .define("JNIVM_BUILD_EXAMPLES", "OFF")
+        .define("JNIVM_ENABLE_DEBUG", "OFF")
+        .cflag("-include string -w")
+        .cxxflag("-include string -w -Wno-template-body")
         .build();
 
     let build_dir = jnivm_dst.join("build");
@@ -28,6 +31,8 @@ fn main() {
         .cpp(true)
         .std("c++17")
         .define("EnableJNIVMGC", None)
+        .flag("-include")
+        .flag("string")
         .flag_if_supported("-Wno-template-body")
         .warnings(false)
         .include("cpp")
