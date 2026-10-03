@@ -1,6 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
+    "crates/jni",
     "crates/linker",
     "crates/runtime",
     "crates/shell",
@@ -22,8 +23,10 @@ gtk4 = { version = "0.11.5", features = ["v4_14"] }
 directories = "6.0.0"
 zip = "8.6.0"
 sha2 = "0.11.0"
-runtime = { path = "crates/runtime" }
+jni = { path = "crates/jni" }
 linker = { path = "crates/linker" }
+runtime = { path = "crates/runtime" }
+shell = { path = "crates/shell" }
 update = { path = "crates/update" }
 
 [workspace.lints.rust]
