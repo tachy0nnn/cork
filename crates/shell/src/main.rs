@@ -1,3 +1,4 @@
+use std::fs;
 use std::path::PathBuf;
 
 use gtk4::prelude::*;
@@ -19,11 +20,41 @@ fn main() -> glib::ExitCode {
     }
 
     let apk_path: &PathBuf = matches
-    .get_one::<PathBuf>("apk")
-    .expect("APK path is required");
+        .get_one::<PathBuf>("apk")
+        .expect("APK path is required");
 
     println!("using APK: {}", apk_path.display());
-    runtime::initialize_config_dir();
+
+    // initialize config dir
+    let config_path = match runtime::initialize_config_dir() {
+        Ok(path) => path,
+        Err(err) => {
+            eprintln!("[error] failed to initialize config dir: {err}");
+            return glib::ExitCode::FAILURE;
+        }
+    };
+
+    if matches.get_flag("debug") {
+        println!("[dbg] initialized config dir at: {}", config_path.display());
+    }
+
+    // 'lib' folder inside config directory
+    let lib_dir = config_path.join("lib");
+    if let Err(err) = fs::create_dir_all(&lib_dir) {
+        eprintln!("[err] failed to create lib directory: {err}");
+        return glib::ExitCode::FAILURE;
+    }
+
+    // extract libs
+    match runtime::extract_libraries(apk_path, &lib_dir, Some("x86_64")) {
+        Ok(files) => {
+            println!("extracted {} libraries to {}", files.len(), lib_dir.display());
+        }
+        Err(err) => {
+            eprintln!("[err] failed to extract libraries: {err}");
+            return glib::ExitCode::FAILURE;
+        }
+    }
 
     if matches.get_flag("debug") {
         println!("[dbg] launching gtk4 window...");
