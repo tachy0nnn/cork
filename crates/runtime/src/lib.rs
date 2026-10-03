@@ -1,9 +1,8 @@
 use directories::ProjectDirs;
-use std::fs;
-use std::fs::File;
-use std::io;
-use std::path::Path;
-use std::path::PathBuf;
+use sha2::{Digest, Sha256};
+use std::fs::{self, File};
+use std::io::{self, Read};
+use std::path::{Path, PathBuf};
 use zip::ZipArchive;
 
 pub fn initialize_config_dir() -> io::Result<PathBuf> {
@@ -17,6 +16,22 @@ pub fn initialize_config_dir() -> io::Result<PathBuf> {
             "failed to resolve & create config directory",
         ))
     }
+}
+
+fn compute_file_sha256(path: &Path) -> io::Result<[u8; 32]> {
+    let mut file = File::open(path)?;
+    let mut hasher = Sha256::new();
+    let mut buffer = [0u8; 8192];
+
+    loop {
+        let n = file.read(&mut buffer)?;
+        if n == 0 {
+            break;
+        }
+        hasher.update(&buffer[..n]);
+    }
+
+    Ok(hasher.finalize().into())
 }
 
 pub fn extract_libraries(
@@ -42,7 +57,7 @@ pub fn extract_libraries(
         };
 
         // only entries that start with desired path
-        if !enclosed_path.starts_with(&prefix) {
+        if !enclosed_path.starts_with(&prefix) || entry.is_dir() {
             continue;
         };
 
@@ -54,27 +69,39 @@ pub fn extract_libraries(
         };
 
         let out_path = dest_dir.join(relative_path);
-        if entry.is_dir() {
-            fs::create_dir_all(&out_path)?;
-        } else {
-            if let Some(parent) = out_path.parent() {
-                fs::create_dir_all(parent)?;
-            }
+        let mut content = Vec::with_capacity(entry.size() as usize);
+        entry.read_to_end(&mut content)?;
 
-            let mut out_file = File::create(&out_path)?;
-            io::copy(&mut entry, &mut out_file)?;
+        // hash the APK file
+        let apk_sha256: [u8; 32] = Sha256::digest(&content).into();
 
-            // preserve unix perms
-            #[cfg(unix)]
-            {
-                use std::os::unix::fs::PermissionsExt;
-                if let Some(mode) = entry.unix_mode() {
-                    fs::set_permissions(&out_path, fs::Permissions::from_mode(mode))?;
+        // if file exists on disk, compare SHA-256 hashes
+        if out_path.exists() {
+            if let Ok(local_sha256) = compute_file_sha256(&out_path) {
+                if local_sha256 == apk_sha256 {
+                    // skip if hashes same
+                    continue;
                 }
             }
-
-            extracted_files.push(out_path);
         }
+
+        // file is missing or has a different hash?
+        if let Some(parent) = out_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+
+        fs::write(&out_path, &content)?;
+
+        // preserve unix perms
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if let Some(mode) = entry.unix_mode() {
+                fs::set_permissions(&out_path, fs::Permissions::from_mode(mode))?;
+            }
+        }
+
+        extracted_files.push(out_path);
     }
 
     Ok(extracted_files)

@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 directories.workspace = true
 zip.workspace = true
+sha2.workspace = true
