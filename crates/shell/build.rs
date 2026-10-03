@@ -25,19 +25,18 @@ fn main() {
     if let Ok(output) = Command::new("git")
         .args(["rev-parse", "--git-dir"])
         .output()
+        && output.status.success()
     {
-        if output.status.success() {
-            let git_dir = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            let head_path = Path::new(&git_dir).join("HEAD");
-            if head_path.exists() {
-                println!("cargo:rerun-if-changed={}", head_path.display());
-                if let Ok(head_contents) = std::fs::read_to_string(&head_path) {
-                    if let Some(ref_path) = head_contents.strip_prefix("ref: ") {
-                        let ref_file = Path::new(&git_dir).join(ref_path.trim());
-                        if ref_file.exists() {
-                            println!("cargo:rerun-if-changed={}", ref_file.display());
-                        }
-                    }
+        let git_dir = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        let head_path = Path::new(&git_dir).join("HEAD");
+        if head_path.exists() {
+            println!("cargo:rerun-if-changed={}", head_path.display());
+            if let Ok(head_contents) = std::fs::read_to_string(&head_path)
+                && let Some(ref_path) = head_contents.strip_prefix("ref: ")
+            {
+                let ref_file = Path::new(&git_dir).join(ref_path.trim());
+                if ref_file.exists() {
+                    println!("cargo:rerun-if-changed={}", ref_file.display());
                 }
             }
         }
