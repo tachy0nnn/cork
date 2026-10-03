@@ -911,6 +911,7 @@ name = "runtime"
 version = "0.1.0"
 dependencies = [
  "directories",
+ "zip",
 ]
 
 [[package]]
