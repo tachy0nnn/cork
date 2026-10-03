@@ -49,19 +49,20 @@ fn main() -> glib::ExitCode {
     }
 
     // extract libs
-    match runtime::extract_libraries(apk_path, &lib_dir, Some("x86_64")) {
+    let extracted_libs = match runtime::extract_libraries(apk_path, &lib_dir, Some("x86_64")) {
         Ok(files) => {
             println!(
                 "extracted {} libraries to {}",
                 files.len(),
                 lib_dir.display()
             );
+            files
         }
         Err(err) => {
             eprintln!("[err] failed to extract libraries: {err}");
             return glib::ExitCode::FAILURE;
         }
-    }
+    };
 
     // 'assets' folder inside cfg dir
     let assets_dir = config_path.join("assets");
@@ -82,6 +83,45 @@ fn main() -> glib::ExitCode {
         Err(err) => {
             eprintln!("[err] failed to extract assets: {err}");
             return glib::ExitCode::FAILURE;
+        }
+    }
+
+    // init JVM and loader
+    let loader = match linker::AndroidLoader::new() {
+        Ok(l) => l,
+        Err(err) => {
+            eprintln!("[err] failed to initialize JNI environment: {err}");
+            return glib::ExitCode::FAILURE;
+        }
+    };
+
+    if matches.get_flag("debug") {
+        println!(
+            "[dbg] JNI VM initialized (JavaVM: {:p}, JNIEnv: {:p})",
+            loader.vm().java_vm(),
+            loader.vm().jni_env()
+        );
+    }
+
+    // debugging
+    for lib_path in &extracted_libs {
+        match loader.load_library(lib_path) {
+            Ok(version) if version > 0 => {
+                println!(
+                    "[linker] loaded {} (JNI version: 0x{version:x})",
+                    lib_path.display()
+                );
+            }
+            Ok(_) => {
+                if matches.get_flag("debug") {
+                    println!("[dbg] loaded {}", lib_path.display());
+                }
+            }
+            Err(err) => {
+                if matches.get_flag("debug") {
+                    eprintln!("[linker] note: {err}");
+                }
+            }
         }
     }
 
