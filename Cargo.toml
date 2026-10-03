@@ -6,6 +6,7 @@ members = [
     "crates/shell",
     "crates/update",
 ]
+default-members = ["crates/shell"]
 
 [workspace.package]
 version = "0.1.0"
