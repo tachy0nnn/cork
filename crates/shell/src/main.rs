@@ -48,7 +48,11 @@ fn main() -> glib::ExitCode {
     // extract libs
     match runtime::extract_libraries(apk_path, &lib_dir, Some("x86_64")) {
         Ok(files) => {
-            println!("extracted {} libraries to {}", files.len(), lib_dir.display());
+            println!(
+                "extracted {} libraries to {}",
+                files.len(),
+                lib_dir.display()
+            );
         }
         Err(err) => {
             eprintln!("[err] failed to extract libraries: {err}");
@@ -61,9 +65,7 @@ fn main() -> glib::ExitCode {
     }
 
     // then gtk ui
-    let app = Application::builder()
-        .application_id(APP_ID)
-        .build();
+    let app = Application::builder().application_id(APP_ID).build();
 
     app.connect_activate(build_ui);
     app.run_with_args::<&str>(&[])

@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use clap::{ArgAction, Command, arg, command, value_parser};
+use std::path::PathBuf;
 
 pub fn build_cli() -> Command {
     command!()
