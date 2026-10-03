@@ -102,3 +102,69 @@ pub fn extract_libraries(
 
     Ok(extracted_files)
 }
+
+pub fn extract_assets_dir(
+    apk_path: &Path,
+    dest_dir: &Path,
+) -> io::Result<Vec<PathBuf>> {
+    let file = File::open(apk_path)?;
+    let mut archive = ZipArchive::new(file)?;
+    let mut extracted_files = Vec::new();
+
+    let prefix = "assets/";
+
+    for i in 0..archive.len() {
+        let mut entry = archive.by_index(i)?;
+        if entry.is_dir() {
+            continue;
+        }
+
+        // sanitize path
+        let Some(enclosed_path) = entry.enclosed_name().map(|p| p.to_owned()) else {
+            continue;
+        };
+
+        // filter only assets
+        if !enclosed_path.starts_with(prefix) {
+            continue;
+        }
+
+        // strip "assets/" prefix so files sit relative to dest_dir
+        let relative_path = match enclosed_path.strip_prefix(prefix) {
+            Ok(p) => p,
+            Err(_) => continue,
+        };
+
+        let out_path = dest_dir.join(relative_path);
+        let mut content = Vec::with_capacity(entry.size() as usize);
+        entry.read_to_end(&mut content)?;
+
+        let apk_sha256: [u8; 32] = Sha256::digest(&content).into();
+
+        // if file exists on disk, compare SHA-256 hashes
+        if compute_file_sha256(&out_path).is_ok_and(|hash| hash == apk_sha256) {
+            extracted_files.push(out_path);
+            continue;
+        }
+
+        // file is missing or has a different hash
+        if let Some(parent) = out_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+
+        fs::write(&out_path, &content)?;
+
+        // preserve unix perms
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if let Some(mode) = entry.unix_mode() {
+                fs::set_permissions(&out_path, fs::Permissions::from_mode(mode))?;
+            }
+        }
+
+        extracted_files.push(out_path);
+    }
+
+    Ok(extracted_files)
+}
