@@ -781,6 +781,9 @@ dependencies = [
 [[package]]
 name = "linker"
 version = "0.1.0"
+dependencies = [
+ "jni",
+]
 
 [[package]]
 name = "log"
