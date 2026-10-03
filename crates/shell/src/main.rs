@@ -10,6 +10,9 @@ const APP_ID: &str = "owo.cork.shell";
 fn main() -> glib::ExitCode {
     // cli first
     let matches = cli::build_cli().get_matches();
+    
+    // SHUT UP I AM SO ANNOYED RIGHT NOW
+    #[allow(clippy::single_match)]
     match matches.subcommand() {
         Some(("info", _)) => {
             println!("version: {}", shell::VERSION);
