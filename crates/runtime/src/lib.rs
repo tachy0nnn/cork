@@ -46,7 +46,14 @@ pub fn extract_libraries(
             continue;
         };
 
-        let out_path = dest_dir.join(&enclosed_path);
+        // strip the prefix so files go directly under dest_dir
+        // e.g. "lib/x86_64/libtest.so" -> "libtest.so"
+        let relative_path = match enclosed_path.strip_prefix(&prefix) {
+            Ok(p) => p,
+            Err(_) => continue,
+        };
+
+        let out_path = dest_dir.join(relative_path);
         if entry.is_dir() {
             fs::create_dir_all(&out_path)?;
         } else {
