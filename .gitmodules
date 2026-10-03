@@ -1,0 +1,6 @@
+[submodule "third_party/linker"]
+	path = third_party/linker
+	url = https://github.com/minecraft-linux/mcpelauncher-linker.git
+[submodule "third_party/libjnivm"]
+	path = third_party/libjnivm
+	url = https://github.com/ChristopherHX/libjnivm.git
