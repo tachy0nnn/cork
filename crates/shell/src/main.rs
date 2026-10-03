@@ -63,6 +63,28 @@ fn main() -> glib::ExitCode {
         }
     }
 
+    // 'assets' folder inside cfg dir
+    let assets_dir = config_path.join("assets");
+    if let Err(err) = fs::create_dir_all(&assets_dir) {
+        eprintln!("[err] failed to create assets directory: {err}");
+        return glib::ExitCode::FAILURE;
+    }
+
+    // extract `assets/` dir
+    match runtime::extract_assets_dir(apk_path, &assets_dir) {
+        Ok(files) => {
+            println!(
+                "extracted {} asset files to {}",
+                files.len(),
+                assets_dir.display()
+            );
+        }
+        Err(err) => {
+            eprintln!("[err] failed to extract assets: {err}");
+            return glib::ExitCode::FAILURE;
+        }
+    }
+
     if matches.get_flag("debug") {
         println!("[dbg] launching gtk4 window...");
     }
