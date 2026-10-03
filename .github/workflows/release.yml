@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & Publish Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-4-dev pkg-config
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build binary
+        run: cargo build --release -p shell
+
+      - name: Package release artifact
+        run: |
+          mkdir -p staging
+          cp target/release/shell staging/cork
+          cp LICENSE staging/
+          tar -czvf "cork-${{ github.ref_name }}-linux-x86_64.tar.gz" -C staging .
+
+      # check if tag contains a hyphen (e.g., v0.1.0-alpha.1) for pre-release marking
+      - name: Determine Release Type
+        id: release_type
+        run: |
+          if [[ "${{ github.ref_name }}" =~ - ]]; then
+            echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
+            echo "release_name=Pre-release ${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+            echo "release_name=Release ${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          name: ${{ steps.release_type.outputs.release_name }}
+          files: cork-${{ github.ref_name }}-linux-x86_64.tar.gz
+          prerelease: ${{ steps.release_type.outputs.is_prerelease == 'true' }}
+          make_latest: ${{ steps.release_type.outputs.is_prerelease != 'true' }}
+          generate_release_notes: true
