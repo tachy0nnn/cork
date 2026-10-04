@@ -12,7 +12,7 @@ default-members = ["crates/shell"]
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.85.0"
+rust-version = "1.99.0"
 license = "AGPL-3.0-or-later"
 repository = "https://github.com/tachy0nnn/cork"
 
@@ -34,8 +34,15 @@ update = { path = "crates/update" }
 unsafe_code = "warn"
 
 [workspace.lints.clippy]
-all = "warn"
-pedantic = "warn"
+pedantic = { level = "warn", priority = -1 }
+similar_names = "allow"
+missing_safety_doc = "allow"
+missing_panics_doc = "allow"
+cast_possible_wrap = "allow"
+too_many_lines = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+cast_possible_truncation = "allow"
 
 [profile.release]
 strip = true

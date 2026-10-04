@@ -14,7 +14,7 @@ Currently, there are no pre-built packages or installer scripts available. You c
 
 ### Prerequisites
 
-Ensure you have [Rust](https://rustup.rs/) (Rust 1.85+ for the 2024 edition) and the GTK 4 development libraries installed:
+Ensure you have [Rust](https://rustup.rs/) (Rust 1.99+) and the GTK 4 development libraries installed:
 
 #### Debian / Ubuntu
 ```bash

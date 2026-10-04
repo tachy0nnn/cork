@@ -1,6 +1,7 @@
 use clap::{ArgAction, Command, arg, command, value_parser};
 use std::path::PathBuf;
 
+#[must_use]
 pub fn build_cli() -> Command {
     command!()
         .version(crate::VERSION)

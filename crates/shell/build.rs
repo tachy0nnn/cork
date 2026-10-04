@@ -14,8 +14,7 @@ fn main() {
                 None
             }
         })
-        .map(|s| s.trim().to_string())
-        .unwrap_or_else(|| "unknown".to_string());
+        .map_or_else(|| "unknown".to_string(), |s| s.trim().to_string());
 
     let pkg_version = env!("CARGO_PKG_VERSION");
     let full_version = format!("{pkg_version}-{git_hash}");
