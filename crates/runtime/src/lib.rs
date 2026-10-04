@@ -1,7 +1,7 @@
+use crc32fast::Hasher;
 use directories::ProjectDirs;
-use sha2::{Digest, Sha256};
 use std::fs::{self, File};
-use std::io::{self, Read};
+use std::io::{self, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
 use zip::ZipArchive;
 
@@ -18,10 +18,10 @@ pub fn initialize_config_dir() -> io::Result<PathBuf> {
     }
 }
 
-fn compute_file_sha256(path: &Path) -> io::Result<[u8; 32]> {
+fn compute_file_crc32(path: &Path) -> io::Result<u32> {
     let mut file = File::open(path)?;
-    let mut hasher = Sha256::new();
-    let mut buffer = [0u8; 8192];
+    let mut hasher = Hasher::new();
+    let mut buffer = [0u8; 16384];
 
     loop {
         let n = file.read(&mut buffer)?;
@@ -31,7 +31,7 @@ fn compute_file_sha256(path: &Path) -> io::Result<[u8; 32]> {
         hasher.update(&buffer[..n]);
     }
 
-    Ok(hasher.finalize().into())
+    Ok(hasher.finalize())
 }
 
 pub fn extract_libraries(
@@ -68,25 +68,23 @@ pub fn extract_libraries(
         };
 
         let out_path = dest_dir.join(relative_path);
-        let mut content = Vec::with_capacity(entry.size() as usize);
-        entry.read_to_end(&mut content)?;
 
-        // hash the APK file
-        let apk_sha256: [u8; 32] = Sha256::digest(&content).into();
+        let is_up_to_date = fs::metadata(&out_path).is_ok_and(|meta| meta.len() == entry.size())
+            && compute_file_crc32(&out_path).is_ok_and(|crc| crc == entry.crc32());
 
-        // if file exists on disk, compare SHA-256 hashes
-        if compute_file_sha256(&out_path).is_ok_and(|hash| hash == apk_sha256) {
-            // skip if hashes are the same
+        if is_up_to_date {
             extracted_files.push(out_path);
             continue;
         }
 
-        // file is missing or has a different hash
+        // file is missing or has a different CRC/size
         if let Some(parent) = out_path.parent() {
             fs::create_dir_all(parent)?;
         }
 
-        fs::write(&out_path, &content)?;
+        let mut outfile = BufWriter::new(File::create(&out_path)?);
+        io::copy(&mut entry, &mut outfile)?;
+        outfile.flush()?;
 
         // preserve unix perms
         #[cfg(unix)]
@@ -132,23 +130,23 @@ pub fn extract_assets_dir(apk_path: &Path, dest_dir: &Path) -> io::Result<Vec<Pa
         };
 
         let out_path = dest_dir.join(relative_path);
-        let mut content = Vec::with_capacity(entry.size() as usize);
-        entry.read_to_end(&mut content)?;
 
-        let apk_sha256: [u8; 32] = Sha256::digest(&content).into();
+        let is_up_to_date = fs::metadata(&out_path).is_ok_and(|meta| meta.len() == entry.size())
+            && compute_file_crc32(&out_path).is_ok_and(|crc| crc == entry.crc32());
 
-        // if file exists on disk, compare SHA-256 hashes
-        if compute_file_sha256(&out_path).is_ok_and(|hash| hash == apk_sha256) {
+        if is_up_to_date {
             extracted_files.push(out_path);
             continue;
         }
 
-        // file is missing or has a different hash
+        // file is missing or has a different CRC/size
         if let Some(parent) = out_path.parent() {
             fs::create_dir_all(parent)?;
         }
 
-        fs::write(&out_path, &content)?;
+        let mut outfile = BufWriter::new(File::create(&out_path)?);
+        io::copy(&mut entry, &mut outfile)?;
+        outfile.flush()?;
 
         // preserve unix perms
         #[cfg(unix)]
