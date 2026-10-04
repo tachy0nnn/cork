@@ -4,14 +4,13 @@ use jni::JniVm;
 use std::ffi::{CStr, CString, c_char, c_int, c_void};
 use std::path::Path;
 
-// signature of android's JNI_OnLoad entry point
-type JniOnLoadFn = unsafe extern "C" fn(vm: *mut c_void, reserved: *mut c_void) -> c_int;
 
 unsafe extern "C" {
     fn cork_linker_load_library(path: *const c_char) -> *mut c_void;
     fn cork_linker_get_symbol(handle: *mut c_void, symbol_name: *const c_char) -> *mut c_void;
     fn cork_linker_get_error() -> *const c_char;
     fn cork_linker_set_search_path(path: *const c_char);
+    fn cork_linker_call_jni_onload(handle: *mut c_void, java_vm: *mut c_void) -> c_int;
 }
 
 pub struct AndroidLoader {
@@ -54,19 +53,8 @@ impl AndroidLoader {
                 ));
             }
 
-            // look up JNI_OnLoad
-            let sym_name = CString::new("JNI_OnLoad").unwrap();
-            let sym = cork_linker_get_symbol(handle, sym_name.as_ptr());
-
-            if sym.is_null() {
-                // some libraries don't export JNI_OnLoad
-                return Ok(0);
-            }
-
             // call JNI_OnLoad with the fake JVM
-            let on_load: JniOnLoadFn = std::mem::transmute(sym);
-            let version = on_load(self.vm.java_vm(), std::ptr::null_mut());
-
+            let version = cork_linker_call_jni_onload(handle, self.vm.java_vm());
             Ok(version)
         }
     }
@@ -75,5 +63,15 @@ impl AndroidLoader {
     #[must_use]
     pub fn vm(&self) -> &JniVm {
         &self.vm
+    }
+
+    /// retrieve a symbol from a loaded library handle
+    #[must_use]
+    pub unsafe fn get_symbol(&self, handle: *mut c_void, name: &str) -> *mut c_void {
+        if let Ok(c_name) = CString::new(name) {
+            unsafe { cork_linker_get_symbol(handle, c_name.as_ptr()) }
+        } else {
+            std::ptr::null_mut()
+        }
     }
 }
