@@ -946,8 +946,8 @@ dependencies = [
 name = "runtime"
 version = "0.1.0"
 dependencies = [
+ "crc32fast",
  "directories",
- "sha2",
  "zip",
 ]
 
