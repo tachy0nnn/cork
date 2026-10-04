@@ -96,8 +96,8 @@ fn main() -> glib::ExitCode {
     };
 
     // setup automatically shims and configure search path so the linker finds both shims and extracted libs
-    let shims_dir = runtime::setup_system_shims(&config_path)
-        .unwrap_or_else(|_| config_path.join("shims"));
+    let shims_dir =
+        runtime::setup_system_shims(&config_path).unwrap_or_else(|_| config_path.join("shims"));
     let search_path = format!("{}:{}", shims_dir.display(), lib_dir.display());
     loader.set_search_path(Path::new(&search_path));
 

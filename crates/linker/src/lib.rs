@@ -4,7 +4,6 @@ use jni::JniVm;
 use std::ffi::{CStr, CString, c_char, c_int, c_void};
 use std::path::Path;
 
-
 unsafe extern "C" {
     fn cork_linker_load_library(path: *const c_char) -> *mut c_void;
     fn cork_linker_get_symbol(handle: *mut c_void, symbol_name: *const c_char) -> *mut c_void;
