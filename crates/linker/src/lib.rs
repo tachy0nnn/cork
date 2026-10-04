@@ -37,7 +37,7 @@ impl AndroidLoader {
         }
     }
 
-    /// load an android native library (.so) and invoke its JNI_OnLoad
+    /// load an android native library (.so) and invoke its `JNI_OnLoad`
     pub fn load_library(&self, path: &Path) -> Result<i32, String> {
         self.resolver.scan_and_resolve_file(path);
 
@@ -67,7 +67,7 @@ impl AndroidLoader {
         }
     }
 
-    /// direct access to the underlying JniVm
+    /// direct access to the underlying `JniVm`
     #[must_use]
     pub fn vm(&self) -> &JniVm {
         &self.vm
