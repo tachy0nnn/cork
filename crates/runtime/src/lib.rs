@@ -52,20 +52,19 @@ pub fn extract_libraries(
         let mut entry = archive.by_index(i)?;
 
         // sanitize path
-        let Some(enclosed_path) = entry.enclosed_name().map(|p| p.to_owned()) else {
+        let Some(enclosed_path) = entry.enclosed_name() else {
             continue;
         };
 
         // only entries that start with desired path
         if !enclosed_path.starts_with(&prefix) || entry.is_dir() {
             continue;
-        };
+        }
 
         // strip the prefix so files go directly under dest_dir
         // e.g. "lib/x86_64/libtest.so" -> "libtest.so"
-        let relative_path = match enclosed_path.strip_prefix(&prefix) {
-            Ok(p) => p,
-            Err(_) => continue,
+        let Ok(relative_path) = enclosed_path.strip_prefix(&prefix) else {
+            continue;
         };
 
         let out_path = dest_dir.join(relative_path);
@@ -118,7 +117,7 @@ pub fn extract_assets_dir(apk_path: &Path, dest_dir: &Path) -> io::Result<Vec<Pa
         }
 
         // sanitize path
-        let Some(enclosed_path) = entry.enclosed_name().map(|p| p.to_owned()) else {
+        let Some(enclosed_path) = entry.enclosed_name() else {
             continue;
         };
 
@@ -128,9 +127,8 @@ pub fn extract_assets_dir(apk_path: &Path, dest_dir: &Path) -> io::Result<Vec<Pa
         }
 
         // strip "assets/" prefix so files sit relative to dest_dir
-        let relative_path = match enclosed_path.strip_prefix(prefix) {
-            Ok(p) => p,
-            Err(_) => continue,
+        let Ok(relative_path) = enclosed_path.strip_prefix(prefix) else {
+            continue;
         };
 
         let out_path = dest_dir.join(relative_path);
