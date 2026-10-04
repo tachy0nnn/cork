@@ -1,59 +1,68 @@
 #![allow(unsafe_code)]
-#![allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
-use jni::JniVm;
-use std::ffi::{CStr, CString, c_char, c_int, c_void};
-use std::path::Path;
+pub mod elf;
+pub mod resolver;
+pub mod shims;
 
-unsafe extern "C" {
-    fn cork_linker_load_library(path: *const c_char) -> *mut c_void;
-    fn cork_linker_get_symbol(handle: *mut c_void, symbol_name: *const c_char) -> *mut c_void;
-    fn cork_linker_get_error() -> *const c_char;
-    fn cork_linker_set_search_path(path: *const c_char);
-    fn cork_linker_call_jni_onload(handle: *mut c_void, java_vm: *mut c_void) -> c_int;
-}
+use jni::JniVm;
+use resolver::SymbolResolver;
+use std::ffi::{CStr, CString, c_void};
+use std::path::Path;
 
 pub struct AndroidLoader {
     vm: JniVm,
+    resolver: SymbolResolver,
 }
 
 impl AndroidLoader {
     /// initialize a new loader with an active fake JVM
     pub fn new() -> Result<Self, &'static str> {
         let vm = JniVm::new()?;
-        Ok(Self { vm })
+        let resolver = SymbolResolver::new();
+        Ok(Self { vm, resolver })
     }
 
     /// set search directories for Android Bionic library resolution
     pub fn set_search_path(&self, path: &Path) {
-        if let Ok(c_path) = CString::new(path.to_str().unwrap_or_default()) {
-            unsafe { cork_linker_set_search_path(c_path.as_ptr()) };
+        let path_str = path.to_string_lossy();
+        if let Ok(c_path) = CString::new(path_str.as_bytes()) {
+            unsafe {
+                resolver::cork_linker_set_search_path(c_path.as_ptr());
+            }
+
+            for dir in path_str.split(':') {
+                if !dir.is_empty() {
+                    self.resolver.scan_and_resolve_dir(Path::new(dir));
+                }
+            }
         }
     }
 
     /// load an android native library (.so) and invoke its JNI_OnLoad
-    pub fn load_library(&self, so_path: &Path) -> Result<i32, String> {
-        let c_path =
-            CString::new(so_path.to_str().ok_or("Invalid path")?).map_err(|e| e.to_string())?;
+    pub fn load_library(&self, path: &Path) -> Result<i32, String> {
+        self.resolver.scan_and_resolve_file(path);
+
+        let c_path = CString::new(path.to_string_lossy().as_bytes())
+            .map_err(|e| format!("Invalid library path: {e}"))?;
 
         unsafe {
             // open the dynamic library
-            let handle = cork_linker_load_library(c_path.as_ptr());
+            let handle = resolver::cork_linker_load_library(c_path.as_ptr());
+
             if handle.is_null() {
-                let err_ptr = cork_linker_get_error();
-                let err_msg = if err_ptr.is_null() {
-                    "unknown linker error".into()
+                let err = resolver::cork_linker_get_error();
+                let err_msg = if err.is_null() {
+                    "Unknown linker error".to_string()
                 } else {
-                    CStr::from_ptr(err_ptr).to_string_lossy().into_owned()
+                    CStr::from_ptr(err).to_string_lossy().into_owned()
                 };
                 return Err(format!(
-                    "mcpelauncher-linker failed to load {}: {}",
-                    so_path.display(),
-                    err_msg
+                    "mcpelauncher-linker failed to load {}: {err_msg}",
+                    path.display()
                 ));
             }
 
             // call JNI_OnLoad with the fake JVM
-            let version = cork_linker_call_jni_onload(handle, self.vm.java_vm());
+            let version = resolver::cork_linker_call_jni_onload(handle, self.vm.java_vm());
             Ok(version)
         }
     }
@@ -68,7 +77,7 @@ impl AndroidLoader {
     #[must_use]
     pub unsafe fn get_symbol(&self, handle: *mut c_void, name: &str) -> *mut c_void {
         if let Ok(c_name) = CString::new(name) {
-            unsafe { cork_linker_get_symbol(handle, c_name.as_ptr()) }
+            unsafe { resolver::cork_linker_get_symbol(handle, c_name.as_ptr()) }
         } else {
             std::ptr::null_mut()
         }
