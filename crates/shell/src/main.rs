@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use gtk4::prelude::*;
 use gtk4::{Application, glib};
@@ -95,12 +95,19 @@ fn main() -> glib::ExitCode {
         }
     };
 
+    // setup automatically shims and configure search path so the linker finds both shims and extracted libs
+    let shims_dir = runtime::setup_system_shims(&config_path)
+        .unwrap_or_else(|_| config_path.join("shims"));
+    let search_path = format!("{}:{}", shims_dir.display(), lib_dir.display());
+    loader.set_search_path(Path::new(&search_path));
+
     if matches.get_flag("debug") {
         println!(
             "[dbg] JNI VM initialized (JavaVM: {:p}, JNIEnv: {:p})",
             loader.vm().java_vm(),
             loader.vm().jni_env()
         );
+        println!("[dbg] linker search path set to: {search_path}");
     }
 
     // debugging

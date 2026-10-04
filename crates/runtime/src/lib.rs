@@ -166,3 +166,27 @@ pub fn extract_assets_dir(apk_path: &Path, dest_dir: &Path) -> io::Result<Vec<Pa
 
     Ok(extracted_files)
 }
+
+pub fn setup_system_shims(config_dir: &Path) -> io::Result<PathBuf> {
+    let shims_dir = config_dir.join("shims");
+    fs::create_dir_all(&shims_dir)?;
+
+    let stale_shims = [
+        "libc.so",
+        "libm.so",
+        "libdl.so",
+        "libz.so",
+        "libEGL.so",
+        "libGLESv2.so",
+        "ld-linux-x86-64.so.2",
+    ];
+
+    for name in stale_shims {
+        let p = shims_dir.join(name);
+        if p.is_symlink() || p.exists() {
+            let _ = fs::remove_file(&p);
+        }
+    }
+
+    Ok(shims_dir)
+}
