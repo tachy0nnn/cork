@@ -13,9 +13,12 @@ fn main() {
     let linker_dst = cmake::Config::new(&linker_source)
         .build_target("linker")
         .define("BUILD_TESTING", "OFF")
-        .cflag("-w")
+        .cflag(format!(
+            "-w -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -include {}",
+            compat_header.display()
+        ))
         .cxxflag(format!(
-            "-w -Wno-template-body -include {}",
+            "-w -Wno-template-body -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -include {}",
             compat_header.display()
         ))
         .build();
