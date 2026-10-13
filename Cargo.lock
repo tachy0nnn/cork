@@ -2003,6 +2003,7 @@ dependencies = [
  "gpapi",
  "reqwest",
  "serde",
+ "tokio",
  "zip",
 ]
 
