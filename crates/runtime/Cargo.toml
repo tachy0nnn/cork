@@ -10,6 +10,7 @@ repository.workspace = true
 directories.workspace = true
 zip.workspace = true
 crc32fast.workspace = true
+serde.workspace = true
 
 [lints]
 workspace = true
