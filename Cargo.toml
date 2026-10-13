@@ -21,6 +21,10 @@ repository = "https://github.com/tachy0nnn/cork"
 clap = { version = "4.6.7", features = ["derive", "cargo"] }
 gtk4 = { version = "0.11.5", features = ["v4_14"] }
 reqwest = { version = "0.13.5", features = ["v4_14"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+gpapi = "6.1.0"
+anyhow = "1.0.104"
 directories = "6.0.0"
 zip = "9.0.0"
 crc32fast = "1.5.2"
