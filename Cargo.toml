@@ -20,7 +20,8 @@ repository = "https://github.com/tachy0nnn/cork"
 [workspace.dependencies]
 clap = { version = "4.6.7", features = ["derive", "cargo"] }
 gtk4 = { version = "0.11.5", features = ["v4_14"] }
-reqwest = { version = "0.13.5", features = ["json"] }
+reqwest = { version = "0.13.5", features = ["json", "blocking"] }
+tokio = { version = "1.53.2", features = ["rt-multi-thread"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 gpapi = "6.1.0"
