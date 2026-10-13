@@ -5,6 +5,8 @@ use std::io::{self, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
 use zip::ZipArchive;
 
+pub mod aurora;
+
 pub fn initialize_config_dir() -> io::Result<PathBuf> {
     if let Some(proj_dirs) = ProjectDirs::from("owo", "cork", "cork") {
         let config_dir = proj_dirs.config_dir();
