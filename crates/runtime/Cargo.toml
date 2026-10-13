@@ -12,6 +12,8 @@ zip.workspace = true
 crc32fast.workspace = true
 serde.workspace = true
 reqwest.workspace = true
+anyhow.workspace = true
+gpapi.workspace = true
 
 [lints]
 workspace = true
