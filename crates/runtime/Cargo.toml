@@ -11,6 +11,7 @@ directories.workspace = true
 zip.workspace = true
 crc32fast.workspace = true
 serde.workspace = true
+reqwest.workspace = true
 
 [lints]
 workspace = true
