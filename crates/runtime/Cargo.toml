@@ -15,6 +15,7 @@ reqwest.workspace = true
 anyhow.workspace = true
 gpapi.workspace = true
 tokio.workspace = true
+is_ci.workspace = true
 
 [lints]
 workspace = true
