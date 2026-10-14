@@ -36,7 +36,7 @@ pub fn fetch_public_dispenser_auth() -> Result<(String, String)> {
     {
         bail!("received 429 or 503 :(");
     } else if !status.is_success() {
-        bail!("received unexpected HTTP status: {}", status);
+        bail!("received unexpected HTTP status: {status}");
     }
 
     let payload: DispenserResponse = response
@@ -51,7 +51,7 @@ pub fn fetch_public_dispenser_auth() -> Result<(String, String)> {
         .context("dispenser did not return auth token field")?;
 
     if !token.starts_with("ya29.") {
-        bail!("invalid auth token received: {}", token);
+        bail!("invalid auth token received: {token}");
     }
 
     Ok((email, token))
@@ -62,6 +62,7 @@ mod tests {
     use super::*;
     use anyhow::anyhow;
     use gpapi::Gpapi;
+    use gpapi::error::ErrorKind as GpapiErrorKind;
     use is_ci::cached;
     use std::fs;
     use std::path::Path;
@@ -87,7 +88,7 @@ mod tests {
         }
 
         let (email, token) = get_test_auth()?;
-        println!("fetched email: {}", email);
+        println!("fetched email: {email}");
         println!("fetched token prefix: {}...", &token[..15.min(token.len())]);
 
         assert!(
@@ -107,8 +108,6 @@ mod tests {
             eprintln!("skipping test_download_apk in CI");
             return Ok(());
         }
-
-        use gpapi::error::ErrorKind as GpapiErrorKind;
 
         let package_name = "com.duckduckgo.mobile.android";
         let output_dir = Path::new("./test_downloads");
@@ -141,7 +140,7 @@ mod tests {
             assert!(details.is_some(), "app details should not be None");
 
             fs::create_dir_all(output_dir)?;
-            api.download(package_name, None, true, false, false, output_dir, None)
+            Box::pin(api.download(package_name, None, true, false, false, output_dir, None))
                 .await
                 .map_err(|e| anyhow!("{e}"))
                 .context("failed to download APK")?;
@@ -150,10 +149,10 @@ mod tests {
         })?;
 
         let found_apk = fs::read_dir(Path::join(output_dir, package_name))?
-            .filter_map(|e| e.ok())
+            .filter_map(std::result::Result::ok)
             .any(|entry| {
                 entry.path().extension().and_then(|e| e.to_str()) == Some("apk")
-                    && entry.metadata().map(|m| m.len() > 0).unwrap_or(false)
+                    && entry.metadata().is_ok_and(|m| m.len() > 0)
             });
 
         assert!(found_apk, "no APK files found in output directory");
