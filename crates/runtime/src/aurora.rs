@@ -62,6 +62,7 @@ mod tests {
     use super::*;
     use anyhow::anyhow;
     use gpapi::Gpapi;
+    use is_ci::cached;
     use std::fs;
     use std::path::Path;
     use std::sync::OnceLock;
@@ -80,9 +81,14 @@ mod tests {
 
     #[test]
     fn test_fetch_dispenser_auth() -> Result<()> {
+        if cached() {
+            eprintln!("skipping test_fetch_dispenser_auth in CI");
+            return Ok(());
+        }
+
         let (email, token) = get_test_auth()?;
-        println!("Fetched email: {}", email);
-        println!("Fetched token prefix: {}...", &token[..15.min(token.len())]);
+        println!("fetched email: {}", email);
+        println!("fetched token prefix: {}...", &token[..15.min(token.len())]);
 
         assert!(
             !email.is_empty(),
@@ -97,6 +103,11 @@ mod tests {
 
     #[test]
     fn test_download_apk() -> Result<()> {
+        if cached() {
+            eprintln!("skipping test_download_apk in CI");
+            return Ok(());
+        }
+
         use gpapi::error::ErrorKind as GpapiErrorKind;
 
         let package_name = "com.duckduckgo.mobile.android";
