@@ -27,11 +27,16 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Set up mold linker
+        uses: rui314/setup-mold@v1
+
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
 
       - name: Build binary
         run: cargo build --release -p shell
+        env:
+          RUSTFLAGS: -C link-arg=-fuse-ld=mold
 
       - name: Package release artifact
         run: |

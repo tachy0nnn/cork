@@ -10,8 +10,25 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  check-and-lint:
-    name: Code Quality & Lints
+  nix:
+    name: Nix Checks (fmt, clippy, build, tests)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run flake checks
+        run: nix flake check --print-build-logs
+
+  nightly:
+    name: Nightly Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -22,47 +39,21 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libgtk-4-dev pkg-config
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
-
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v2
-
-      - name: Check code formatting
-        run: cargo fmt --all --check
-
-      - name: Run Clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
-
-  test:
-    name: Build & Test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-        with:
-          submodules: recursive
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libgtk-4-dev pkg-config
+          sudo apt-get install -y --no-install-recommends libgtk-4-dev pkg-config cmake
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Set up mold linker
+        uses: rui314/setup-mold@v1
+
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Build workspace
-        run: cargo build --release --workspace --all-targets
-
-      - name: Run tests
-        run: cargo test --workspace
+      - name: Build binary
+        run: cargo build --release -p shell
+        env:
+          RUSTFLAGS: -C link-arg=-fuse-ld=mold
 
       - name: Upload Test Binary
         uses: actions/upload-artifact@v7
