@@ -32,6 +32,9 @@ jobs:
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "cork-cargo"
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Build binary
         run: cargo build --release -p shell

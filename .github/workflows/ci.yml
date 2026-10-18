@@ -23,12 +23,27 @@ jobs:
         uses: cachix/install-nix-action@v31
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          extra_nix_config: |
+            keep-env-derivations = true
+            keep-outputs = true
 
       - name: Check flake.lock health
         uses: DeterminateSystems/flake-checker-action@main
 
-      - name: Enable Nix binary cache
-        uses: DeterminateSystems/magic-nix-cache-action@main
+      - name: Restore and save Nix store
+        uses: nix-community/cache-nix-action@v7
+        with:
+          # only creates a new cache when nix files or cargo.lock change
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock', '**/Cargo.lock') }}
+          # falls back to the previous nix cache when dependencies update
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          # caps the nix store at 4 GB before saving
+          gc-max-store-size-linux: 4G
+          # automatically deletes all older nix-Linux-* caches!! >,<
+          purge: true
+          purge-prefixes: nix-${{ runner.os }}-
+          purge-created: 0
+          purge-primary-key: never
 
       - name: Run flake checks
         run: nix flake check --print-build-logs
@@ -52,9 +67,6 @@ jobs:
 
       - name: Set up mold linker
         uses: rui314/setup-mold@v1
-
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v2
 
       - name: Build binary
         run: cargo build --release -p shell
