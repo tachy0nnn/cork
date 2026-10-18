@@ -16,6 +16,9 @@ rust-version = "1.99.0"
 license = "AGPL-3.0-or-later"
 repository = "https://github.com/tachy0nnn/cork"
 
+[workspace.metadata.crane]
+name = "cork"
+
 # maintaining dependencies in root cargo.toml would be easier :P
 [workspace.dependencies]
 clap = { version = "4.6.7", features = ["derive", "cargo"] }
