@@ -1,4 +1,4 @@
-# <img src=".github/icons/ferris.svg" width="38" align="center" /> cork
+# <img src=".github/icons/ferris.svg" height="38" align="top" /> cork
 
 [![CI](https://github.com/tachy0nnn/cork/actions/workflows/ci.yml/badge.svg)](https://github.com/tachy0nnn/cork/actions/workflows/ci.yml)
 [![License: AGPL-3.0-or-later](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue.svg)](LICENSE)
