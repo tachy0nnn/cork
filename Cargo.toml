@@ -1,11 +1,11 @@
 [workspace]
 resolver = "3"
 members = [
-    "crates/jni",
-    "crates/linker",
-    "crates/runtime",
-    "crates/shell",
-    "crates/update",
+  "crates/jni",
+  "crates/linker",
+  "crates/runtime",
+  "crates/shell",
+  "crates/update",
 ]
 default-members = ["crates/shell"]
 
