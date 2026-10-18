@@ -1,4 +1,7 @@
 /target
 /build
+/result
+.direnv/
+.pre-commit-config.yaml
 /.vscode
 *.txt
