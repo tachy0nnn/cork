@@ -10,34 +10,4 @@ An experimental Roblox runtime for Linux that uses the official Android APK as i
 
 ## Building from Source
 
-Currently, there are no pre-built packages or installer scripts available. You can build Cork manually from source using Cargo.
-
-### Prerequisites
-
-Ensure you have [Rust](https://rustup.rs/) (Rust 1.99+) and the GTK 4 development libraries installed:
-
-#### Debian / Ubuntu
-```bash
-sudo apt install -y build-essential libgtk-4-dev pkg-config
-```
-
-#### Arch Linux
-```bash
-sudo pacman -S git base-devel gtk4 pkgconf
-```
-
-#### Fedora / RHEL
-```bash
-sudo dnf install git gcc gtk4-devel pkg-config
-```
-
-### Compilation
-1. Clone the repository:
-  ```bash
-  git clone --recursive https://github.com/tachy0nnn/cork.git
-  cd cork
-  ```
-2. Build the binary:
-  ```bash
-  cargo build --release
-  ```
+There are no pre-built packages or installer scripts yet. Cork can be built from source with [Nix](BUILD.md#building-with-nix) or [Cargo](BUILD.md#building-with-cargo). See [BUILD.md](BUILD.md) for the full instructions.
