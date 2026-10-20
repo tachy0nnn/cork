@@ -1,0 +1,93 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # every day at 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: Anything new?
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.decide.outputs.build }}
+    steps:
+      - name: Compare main with the last nightly
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          last=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/nightly" --jq .object.sha 2>/dev/null || true)
+          if [ "$EVENT" = "schedule" ] && [ "$last" = "$GITHUB_SHA" ]; then
+            echo "build=false" >> "$GITHUB_OUTPUT"
+            echo "no new commits since the last nightly ($GITHUB_SHA), skipping"
+          else
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    name: Build & Publish Nightly
+    needs: check
+    if: needs.check.outputs.build == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-4-dev pkg-config cmake
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install
+
+      - name: Set up mold linker
+        uses: rui314/setup-mold@v1
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "cork-cargo"
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build binary
+        run: cargo build --release -p shell
+        env:
+          RUSTFLAGS: -C link-arg=-fuse-ld=mold
+
+      - name: Package
+        run: |
+          mkdir -p staging
+          cp target/release/cork staging/cork
+          cp LICENSE staging/
+          tar -czvf cork-nightly-linux-x86_64.tar.gz -C staging .
+          sha256sum cork-nightly-linux-x86_64.tar.gz > cork-nightly-linux-x86_64.tar.gz.sha256
+
+      - name: Publish rolling prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete nightly --cleanup-tag --yes || true
+          gh release create nightly \
+            cork-nightly-linux-x86_64.tar.gz \
+            cork-nightly-linux-x86_64.tar.gz.sha256 \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Nightly $(date -u +%F)" \
+            --notes "Automated build of main at ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}; unstable, may be broken!"

@@ -1,0 +1,67 @@
+name: PR Size
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: pr-size-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  label:
+    name: Label PR by size
+    runs-on: ubuntu-latest
+    steps:
+      - name: Compute size and apply label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          EXCLUDE: '(^|/)(Cargo\.lock|flake\.lock|package-lock\.json|yarn\.lock|pnpm-lock\.yaml)$|^third_party/'
+          XS_MAX: 10
+          S_MAX: 50
+          M_MAX: 200
+          L_MAX: 500
+        run: |
+          set -euo pipefail
+          changed=$(gh api --paginate "repos/$REPO/pulls/$PR/files" \
+            --jq '.[] | [.filename, .additions, .deletions] | @tsv' \
+            | awk -F'\t' '{ if ($1 !~ ENVIRON["EXCLUDE"]) s += $2 + $3 } END { print s + 0 }')
+
+          if   [ "$changed" -lt "$XS_MAX" ]; then size="XS"
+          elif [ "$changed" -lt "$S_MAX"  ]; then size="S"
+          elif [ "$changed" -lt "$M_MAX"  ]; then size="M"
+          elif [ "$changed" -lt "$L_MAX"  ]; then size="L"
+          else size="XL"
+          fi
+          target="size: $size"
+          echo "PR #$PR: $changed changed lines -> $target"
+
+          declare -A colors=( [XS]="6e7681" [S]="2ea043" [M]="d4a72c" [L]="e3862b" [XL]="da3633" )
+          for s in "${!colors[@]}"; do
+            gh label create "size: $s" --repo "$REPO" --color "${colors[$s]}" \
+              --description "Pull request size: $s" 2>/dev/null || true
+          done
+
+          has_target=false
+          while IFS= read -r label; do
+            [ -z "$label" ] && continue
+            if [ "$label" = "$target" ]; then
+              has_target=true
+            else
+              encoded=$(jq -rn --arg n "$label" '$n | @uri')
+              gh api -X DELETE "repos/$REPO/issues/$PR/labels/$encoded" > /dev/null
+            fi
+          done < <(gh api "repos/$REPO/issues/$PR/labels" --jq '.[].name | select(startswith("size: "))')
+
+          if [ "$has_target" = false ]; then
+            gh api -X POST "repos/$REPO/issues/$PR/labels" -f "labels[]=$target" > /dev/null
+          fi
+
+          echo "PR #$PR: $changed changed lines -> \`$target\`" >> "$GITHUB_STEP_SUMMARY"

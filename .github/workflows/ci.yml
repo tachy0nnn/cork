@@ -5,14 +5,25 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_call:
 
 env:
   CARGO_TERM_COLOR: always
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   nix:
     name: Nix Checks (fmt, clippy, build, tests)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -48,35 +59,29 @@ jobs:
       - name: Run flake checks
         run: nix flake check --print-build-logs
 
-  nightly:
-    name: Nightly Build
+  dev-build:
+    name: Dev Build
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
-
-      - name: Install system dependencies
-        run: |
+      - run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libgtk-4-dev pkg-config cmake
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Set up mold linker
-        uses: rui314/setup-mold@v1
-
-      - name: Build binary
-        run: cargo build --release -p shell
+      - run: rustup toolchain install
+      - uses: rui314/setup-mold@v1
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: cork-cargo
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: cargo build --release -p shell
         env:
           RUSTFLAGS: -C link-arg=-fuse-ld=mold
-
-      - name: Upload Test Binary
-        uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7
         with:
           name: cork-dev-linux-x86_64
-          path: target/release/cork # frick YOU
+          path: target/release/cork
           if-no-files-found: error
           retention-days: 7
