@@ -1,9 +1,16 @@
+use std::path::Path;
+
+use anyhow::anyhow;
 use anyhow::{Context, Result, bail};
+use gpapi::Gpapi;
+use gpapi::error::ErrorKind as GpapiErrorKind;
 use reqwest::{
     blocking::Client,
     header::{ACCEPT, HeaderMap, HeaderValue, USER_AGENT},
 };
+
 use serde::Deserialize;
+use tokio::runtime::Runtime;
 
 #[derive(Debug, Deserialize)]
 struct DispenserResponse {
@@ -57,17 +64,43 @@ pub fn fetch_public_dispenser_auth() -> Result<(String, String)> {
     Ok((email, token))
 }
 
+pub fn download_apk(pkg: String, path: &Path) -> Result<&Path> {
+    let (email, token) = fetch_public_dispenser_auth()?;
+    let rt = Runtime::new()?;
+    rt.block_on(async {
+        let mut api = Gpapi::new("px_9a", &email);
+        api.set_auth_token(token);
+
+        match api.login().await {
+            Err(e) if matches!(e.kind(), GpapiErrorKind::TermsOfService) => {
+                api.accept_tos()
+                    .await
+                    .map_err(|e| anyhow!("{e}"))
+                    .context("failed to accept the TOS of gplay")?;
+            }
+            Err(e) => {
+                return Err(anyhow!("{e}")).context("failed to log in to gplay");
+            }
+            Ok(()) => {}
+        }
+
+        Box::pin(api.download(pkg, None, true, false, false, path, None))
+            .await
+            .map_err(|e| anyhow!("{e}"))
+            .context("failed to download APK")?;
+
+        Ok(())
+    })?;
+
+    Ok(path)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use anyhow::anyhow;
-    use gpapi::Gpapi;
-    use gpapi::error::ErrorKind as GpapiErrorKind;
     use is_ci::cached;
     use std::fs;
-    use std::path::Path;
     use std::sync::OnceLock;
-    use tokio::runtime::Runtime;
 
     static AUTH_CACHE: OnceLock<(String, String)> = OnceLock::new();
 
@@ -145,7 +178,7 @@ mod tests {
                 .map_err(|e| anyhow!("{e}"))
                 .context("failed to download APK")?;
 
-            Ok::<(), anyhow::Error>(())
+            Ok(())
         })?;
 
         let found_apk = fs::read_dir(Path::join(output_dir, package_name))?
