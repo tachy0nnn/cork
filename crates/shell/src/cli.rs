@@ -9,7 +9,7 @@ pub fn build_cli() -> Command {
         .arg(arg!(-d --debug "Enable debug logging").action(ArgAction::SetTrue))
         .arg(
             arg!(-a --apk <PATH> "Use custom APK file")
-                .required(true)
+                .required(false)
                 .value_parser(value_parser!(PathBuf)),
         )
 }

@@ -15,6 +15,7 @@ clap.workspace = true
 gtk4.workspace = true
 runtime.workspace = true
 linker.workspace = true
+anyhow.workspace = true
 
 [lints]
 workspace = true
