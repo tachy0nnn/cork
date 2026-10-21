@@ -26,12 +26,13 @@ jobs:
       actions: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
+          persist-credentials: false
 
       - name: Install Nix
-        uses: cachix/install-nix-action@v31
+        uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702 # v31.11.2
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
           extra_nix_config: |
@@ -39,10 +40,10 @@ jobs:
             keep-outputs = true
 
       - name: Check flake.lock health
-        uses: DeterminateSystems/flake-checker-action@main
+        uses: DeterminateSystems/flake-checker-action@786422608c7bded2bbc9741ad9f91356842bf520 # v14
 
       - name: Restore and save Nix store
-        uses: nix-community/cache-nix-action@v7
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
         with:
           # only creates a new cache when nix files or cargo.lock change
           primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock', '**/Cargo.lock') }}
@@ -50,8 +51,8 @@ jobs:
           restore-prefixes-first-match: nix-${{ runner.os }}-
           # caps the nix store at 4 GB before saving
           gc-max-store-size-linux: 4G
-          # automatically deletes all older nix-Linux-* caches!! >,<
-          purge: true
+          save: ${{ github.ref == 'refs/heads/main' }}
+          purge: ${{ github.ref == 'refs/heads/main' }}
           purge-prefixes: nix-${{ runner.os }}-
           purge-created: 0
           purge-primary-key: never
@@ -64,24 +65,53 @@ jobs:
     if: ${{ !startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
-      - run: |
+          persist-credentials: false
+
+      - name: Install system dependencies
+        run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libgtk-4-dev pkg-config cmake
-      - run: rustup toolchain install
-      - uses: rui314/setup-mold@v1
-      - uses: Swatinem/rust-cache@v2
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install
+
+      - name: Set up mold linker
+        uses: rui314/setup-mold@339e96b4ff1f3bd865856ba4cbbe8818a7acb038 # v1
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           shared-key: cork-cargo
           save-if: ${{ github.ref == 'refs/heads/main' }}
-      - run: cargo build --release -p shell
+
+      - name: Build binary
+        run: cargo build --release -p shell
         env:
           RUSTFLAGS: -C link-arg=-fuse-ld=mold
-      - uses: actions/upload-artifact@v7
+
+      - name: Upload dev binary
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: cork-dev-linux-x86_64
           path: target/release/cork
           if-no-files-found: error
           retention-days: 7
+
+  deny:
+    name: Cargo Deny (bans, licenses, sources)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Check bans, licenses and sources
+        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+        with:
+          command: check bans licenses sources

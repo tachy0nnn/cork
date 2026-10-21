@@ -4,9 +4,15 @@ on:
   push:
     tags: ["v[0-9]+.[0-9]+.[0-9]+*"]
 
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   ci:
-    uses: ./.github/workflows/ci.yml
+    uses: $/.github/workflows/ci.yml
     permissions:
       contents: read
       actions: write
@@ -19,10 +25,10 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
           submodules: recursive
+          persist-credentials: false
 
       - name: Install system dependencies
         run: |
@@ -41,13 +47,7 @@ jobs:
           [ "v$ver" = "$TAG" ] || { echo "tag $TAG != Cargo version $ver"; exit 1; }
 
       - name: Set up mold linker
-        uses: rui314/setup-mold@v1
-
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: "cork-cargo"
-          save-if: ${{ github.ref == 'refs/heads/main' }}
+        uses: rui314/setup-mold@339e96b4ff1f3bd865856ba4cbbe8818a7acb038 # v1
 
       - name: Build binary
         run: cargo build --release -p shell
@@ -64,26 +64,24 @@ jobs:
           tar -czvf "cork-$TAG-linux-x86_64.tar.gz" -C staging .
           sha256sum "cork-$TAG-linux-x86_64.tar.gz" > "cork-$TAG-linux-x86_64.tar.gz.sha256"
 
-      - name: Determine Release Type
-        id: release_type
+      - name: Publish GitHub release
         env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
         run: |
+          set -euo pipefail
           if [[ "$TAG" == *-* ]]; then
-            echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
-            echo "release_name=Pre-release $TAG" >> "$GITHUB_OUTPUT"
+            title="Pre-release $TAG"
+            flags=(--prerelease)
           else
-            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
-            echo "release_name=Release $TAG" >> "$GITHUB_OUTPUT"
+            title="Release $TAG"
+            flags=(--latest)
           fi
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3
-        with:
-          name: ${{ steps.release_type.outputs.release_name }}
-          files: |
-            cork-${{ github.ref_name }}-linux-x86_64.tar.gz
-            cork-${{ github.ref_name }}-linux-x86_64.tar.gz.sha256
-          prerelease: ${{ steps.release_type.outputs.is_prerelease == 'true' }}
-          make_latest: ${{ steps.release_type.outputs.is_prerelease != 'true' }}
-          generate_release_notes: true
+          gh release create "$TAG" \
+            "cork-$TAG-linux-x86_64.tar.gz" \
+            "cork-$TAG-linux-x86_64.tar.gz.sha256" \
+            --title "$title" \
+            --generate-notes \
+            --verify-tag \
+            "${flags[@]}"
