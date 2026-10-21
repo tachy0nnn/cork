@@ -138,6 +138,12 @@
               pkgs.cargo-deny
               pkgs.cargo-audit
               pkgs.bacon
+              pkgs.binutils
+              pkgs.elfutils
+              pkgs.cargo-binutils
+              pkgs.gdb
+              pkgs.strace
+              pkgs.file
             ]
             ++ lib.optionals useMold [ pkgs.mold ];
 

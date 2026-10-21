@@ -2,4 +2,4 @@
 # "stable" follows the rust-overlay input, update it with: nix flake update rust-overlay
 channel = "stable"
 profile = "minimal"
-components = ["rustfmt", "clippy", "rust-analyzer", "rust-src"]
+components = ["rustfmt", "clippy", "rust-analyzer", "rust-src", "llvm-tools"]
