@@ -149,7 +149,6 @@
 
             env = {
               RUST_BACKTRACE = "1";
-              # runtime libraries for gui/graphics crates, uncomment and extend if needed:
               # LD_LIBRARY_PATH = lib.makeLibraryPath [ pkgs.wayland pkgs.libxkbcommon pkgs.vulkan-loader ];
             }
             // lib.optionalAttrs useMold {

@@ -63,30 +63,30 @@ fn main() -> glib::ExitCode {
         return glib::ExitCode::FAILURE;
     }
 
-    let loader = match linker::AndroidLoader::new() {
-        Ok(l) => l,
-        Err(err) => {
-            eprintln!("[err] failed to initialize JNI environment: {err}");
-            return glib::ExitCode::FAILURE;
-        }
-    };
-
-    // shims plus extracted libs, so the linker can find both
-    let shims_dir =
-        runtime::setup_system_shims(&config_path).unwrap_or_else(|_| config_path.join("shims"));
-    let search_path = format!("{}:{}", shims_dir.display(), lib_dir.display());
-    loader.set_search_path(Path::new(&search_path));
-
-    if debug {
-        println!(
-            "[dbg] JNI VM initialized (JavaVM: {:p}, JNIEnv: {:p})",
-            loader.vm().java_vm(),
-            loader.vm().jni_env()
-        );
-        println!("[dbg] linker search path set to: {search_path}");
-    }
-
-    preload_libs(&loader, &extracted_libs, debug);
+    //     let loader = match linker::AndroidLoader::new() {
+    //         Ok(l) => l,
+    //         Err(err) => {
+    //             eprintln!("[err] failed to initialize JNI environment: {err}");
+    //             return glib::ExitCode::FAILURE;
+    //         }
+    //     };
+    //
+    //     // shims plus extracted libs, so the linker can find both
+    //     let shims_dir =
+    //         runtime::setup_system_shims(&config_path).unwrap_or_else(|_| config_path.join("shims"));
+    //     let search_path = format!("{}:{}", shims_dir.display(), lib_dir.display());
+    //     loader.set_search_path(Path::new(&search_path));
+    //
+    //     if debug {
+    //         println!(
+    //             "[dbg] JNI VM initialized (JavaVM: {:p}, JNIEnv: {:p})",
+    //             loader.vm().java_vm(),
+    //             loader.vm().jni_env()
+    //         );
+    //         println!("[dbg] linker search path set to: {search_path}");
+    //     }
+    //
+    //     preload_libs(&loader, &extracted_libs, debug);
 
     if debug {
         println!("[dbg] launching gtk4 window...");
@@ -164,18 +164,18 @@ fn extract_assets(apks: &[PathBuf], assets_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-fn preload_libs(loader: &linker::AndroidLoader, libs: &[PathBuf], debug: bool) {
-    for lib_path in libs {
-        match loader.load_library(lib_path) {
-            Ok(version) if version > 0 => {
-                println!(
-                    "[linker] loaded {} (JNI version: 0x{version:x})",
-                    lib_path.display()
-                );
-            }
-            Ok(_) if debug => println!("[dbg] loaded {}", lib_path.display()),
-            Err(err) if debug => eprintln!("[linker] note: {err}"),
-            Ok(_) | Err(_) => {}
-        }
-    }
-}
+// fn preload_libs(loader: &linker::AndroidLoader, libs: &[PathBuf], debug: bool) {
+//     for lib_path in libs {
+//         match loader.load_library(lib_path) {
+//             Ok(version) if version > 0 => {
+//                 println!(
+//                     "[linker] loaded {} (JNI version: 0x{version:x})",
+//                     lib_path.display()
+//                 );
+//             }
+//             Ok(_) if debug => println!("[dbg] loaded {}", lib_path.display()),
+//             Err(err) if debug => eprintln!("[linker] note: {err}"),
+//             Ok(_) | Err(_) => {}
+//         }
+//     }
+// }
