@@ -1,0 +1,44 @@
+name: Conventional Commits
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions: {}
+
+concurrency:
+  group: cc-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  pr-title:
+    name: PR title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -euo pipefail
+          # Conventional Commits 1.0.0 subject:
+          #   type(scope)?!?: description
+          title="${TITLE#"${TITLE%%[![:space:]]*}"}"
+          title="${title%"${title##*[![:space:]]}"}"
+          pattern='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([^)]+\))?(!)?: .+'
+          if [[ "${title}" =~ ${pattern} ]]; then
+            echo "PR title is a Conventional Commits subject:"
+            echo "  ${title}"
+            exit 0
+          fi
+          echo "PR title is not a Conventional Commits subject:"
+          echo "  ${TITLE}"
+          echo
+          echo "Allowed types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
+          echo
+          echo "Use a title like:"
+          echo "  feat(shell): download the apk automatically"
+          echo "  fix(linker): handle missing symbols"
+          echo "  ci(deps): pin github actions"
+          echo
+          echo "See https://www.conventionalcommits.org/en/v1.0.0/"
+          exit 1
