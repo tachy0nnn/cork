@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:best-practices", "group:allNonMajor"],
-  "labels": ["type: dependencies"],
+  "labels": ["type: dependencies", "area: build"],
   "minimumReleaseAge": "3 days",
   "internalChecksFilter": "strict",
   "osvVulnerabilityAlerts": true,
@@ -15,6 +15,7 @@
   "packageRules": [
     {
       "matchManagers": ["github-actions"],
+      "labels": ["type: dependencies", "area: ci"],
       "groupName": "GitHub Actions",
       "semanticCommitType": "ci"
     }
