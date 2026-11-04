@@ -1,3 +1,11 @@
+> [!NOTE]
+> Wondering why development is taking so long? I'm currently developing libraries for this project as part of my organization.
+> I'm also still in school, so my free time is limited.
+>
+> I'm looking for a second maintainer for this project. If you're interested, please open an issue.
+>
+> If you'd like to help with those libraries, check out [my organization](https://github.com/rurikoo).
+
 # <img src=".github/icons/ferris.svg" height="38" align="top" /> cork
 
 [![CI](https://github.com/tachy0nnn/cork/actions/workflows/ci.yml/badge.svg)](https://github.com/tachy0nnn/cork/actions/workflows/ci.yml)
